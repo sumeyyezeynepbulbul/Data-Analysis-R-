@@ -1,0 +1,341 @@
+---
+title: "StudentPerformance"
+author: "Sumeyye Zeynep Bulbul"
+date: "3/10/2020"
+output: html_document
+---
+
+#STUDENT PERFORMANCE DATASET FROM UCI MACHINE LEARNING REPOSITORY
+#LOAD DATA
+```{r}
+student <- read.csv("/Users/sumeyye/Downloads/student/student-mat.csv", sep=';',header=TRUE)
+```
+
+
+#INSTALL PACKAGES
+```{r}
+
+library("corrplot")
+library("corrgram")
+library("tidyr")
+library("gridExtra")
+library("GGally")
+library("dplyr")
+library("plyr")
+library("plotly")
+
+```
+
+
+#DESCRIPTION DATA SET 
+```{r}
+names(student)
+```
+
+```{r}
+head(student)
+```
+
+```{r}
+dim(student)
+```
+
+```{r}
+str(student)
+```
+
+```{r}
+summary(student)
+```
+
+#CHECK NULL VALUES 
+```{r}
+
+any(is.na(student))
+```
+
+```{r}
+glimpse(student)
+```
+
+#CORRELATIONS
+```{r}
+ 
+# Grab only numeric columns
+num.cols <- sapply(student, is.numeric)
+
+# Filter to numeric columns for correlation
+cor.data <- cor(student[,num.cols])
+
+corrplot::corrplot(cor.data, method='color')
+```
+
+
+```{r}
+d <- data.frame(student %>% select(names(student)[-c(1,2,4,5,6,9,10,11,12,16,17,18,19,20,21,22,23,27,28)]))
+cd <- round(cor(d), 1)
+order <- corrMatOrder(cd, order = "hclust", hclust.method = "ward.D2")
+cd <- cd[order, order]
+corrplot(cd, method="number")
+corrRect.hclust(cd, k = 4, method = "ward.D2")
+```
+
+```{r}
+cor_vals <- cd[,"G3"]
+plot_ly(y = abs(cor_vals), x = names(cor_vals), type = "bar")
+```
+
+
+#FIRST GRADE , SECOND GRADE AND FINAL GRADE 
+
+
+```{r}
+ggpairs(student, aes(color = sex), 31:33)
+```
+
+```{r}
+hist(student$G1) 
+```
+
+```{r}
+hist(student$G2) 
+```
+
+```{r}
+hist(student$G3) 
+```
+
+#compare final grade of  two schools 
+```{r}
+aggregate(student[,15],student["school"], mean);
+```
+
+#Distribution of Final Grade
+```{r}
+boxplot(student$G3~student$sex,data=student, main="Distribution of Final Grade",  xlab="sex", ylab="Final Grade")
+```
+
+```{r}
+ggplot(student, aes(x=sex, y=G3, fill=sex)) + 
+    geom_boxplot()
+```
+
+
+```{r}
+# Final Grade by Gender plot
+p2 <- ggplot(student, aes(G3)) +  geom_histogram(binwidth=2, color="gray", aes(fill=sex))
+p2 <- p2 + xlab("Final Grade") + ylab("sex") + ggtitle("Final Grade by Sex")
+p2
+```
+
+
+
+```{r}
+mathGrades <- student %>%
+  gather('G1', 'G2', 'G3', key="semester", value="grade") %>%
+  ggplot() +
+  geom_bar(aes(x=grade, fill=semester), position="dodge") + 
+  ggtitle("Distribution of three grades in Math Class")
+grid.arrange(mathGrades)
+```
+
+
+```{r}
+mathGrades2 <- ggplot(student) +
+  geom_bar(aes(x=school, fill=as.factor(G3)), position="dodge") +
+  ggtitle("Distribution of Math grades by school") +
+  theme(legend.position = "none")
+grid.arrange(mathGrades2)
+```
+
+```{r}
+schoolMath <- ggplot(student, aes(x=G3)) +
+  geom_density(aes(color=school)) +
+  ggtitle("Distribution of Math students' grades by school")
+grid.arrange(schoolMath)
+```
+
+```{r}
+meduMath <- ggplot(student, aes(x=G3)) + 
+  geom_density(aes(color=as.factor(Medu))) + 
+  ggtitle("Distribution of Math students' grades by mothers' education")
+grid.arrange(meduMath)
+```
+
+```{r}
+feduMath <- ggplot(student, aes(x=G3)) + 
+  geom_density(aes(color=as.factor(Fedu))) + 
+  ggtitle("Distribution of Math students' grades by fathers' education")
+grid.arrange(feduMath)
+```
+
+
+```{r}
+mjobMath <- ggplot(student, aes(x=G3)) + 
+  geom_density(aes(color=as.factor(Mjob))) + 
+  ggtitle("Distribution of Math students' grades by mothers' job")
+grid.arrange(mjobMath)
+```
+
+```{r}
+fjobMath <- ggplot(student, aes(x=G3)) +
+  geom_density(aes(color=as.factor(Fjob))) + 
+  ggtitle("Distribution of Math students' grades by fathers' job")
+grid.arrange(fjobMath)
+```
+
+
+```{r}
+famMath <- ggplot(student, aes(x=G3)) +
+  geom_density(aes(color=as.factor(famrel))) +
+  ggtitle("Distribution of Math students' grades by family relationships")
+grid.arrange(famMath)
+```
+
+
+
+
+#ALCOHOL CONSUMPTION AND GRADES 
+
+
+```{r}
+student$Dalc <- as.factor(student$Dalc)      
+student$Dalc <- mapvalues(student$Dalc, 
+                              from = 1:5, 
+                              to = c("Very Low", "Low", "Medium", "High", "Very High"))
+
+student$Walc <- as.factor(student$Walc)      
+student$Walc <- mapvalues(student$Walc, 
+                              from = 1:5, 
+                              to = c("Very Low", "Low", "Medium", "High", "Very High"))
+```
+
+
+```{r}
+#workday alcohol consumption
+c5 <- ggplot(student, aes(x=Dalc, y=G1, fill=Dalc))+
+      geom_boxplot()+
+      theme_bw()+
+      theme(legend.position="none")+
+      #scale_fill_manual(values=waffle.col)+
+      xlab("Alcohol consumption")+
+      ylab("Grade")+
+      ggtitle("First period grade")
+
+c6 <- ggplot(student, aes(x=Dalc, y=G2, fill=Dalc))+
+      geom_boxplot()+
+      theme_bw()+
+      theme(legend.position="none")+
+      #scale_fill_manual(values=waffle.col)+
+      xlab("Alcohol consumption")+
+      ylab("Grade")+
+      ggtitle("Second period grade")
+
+c7 <- ggplot(student, aes(x=Dalc, y=G3, fill=Dalc))+
+      geom_boxplot()+
+      theme_bw()+
+      theme(legend.position="none")+
+      #scale_fill_manual(values=waffle.col)+
+      xlab("Alcohol consumption")+
+      ylab("Grade")+
+      ggtitle("Final period grade")
+grid.arrange(c5,c6,c7,ncol=3)
+```
+
+
+```{r}
+#weekend alcohol consumption
+c8 <- ggplot(student, aes(x=Walc, y=G1, fill=Walc))+
+      geom_boxplot()+
+      theme_bw()+
+      theme(legend.position="none")+
+      #scale_fill_manual(values=waffle.col)+
+      xlab("Alcohol consumption")+
+      ylab("Grade")+
+      ggtitle("First period grade")
+
+c9 <- ggplot(student, aes(x=Walc, y=G2, fill=Walc))+
+      geom_boxplot()+
+      theme_bw()+
+      theme(legend.position="none")+
+      #scale_fill_manual(values=waffle.col)+
+      xlab("Alcohol consumption")+
+      ylab("Grade")+
+      ggtitle("Second period grade")
+
+c10 <- ggplot(student, aes(x=Walc, y=G3, fill=Walc))+
+      geom_boxplot()+
+      theme_bw()+
+      theme(legend.position="none")+
+      #scale_fill_manual(values=waffle.col)+
+      xlab("Alcohol consumption")+
+      ylab("Grade")+
+      ggtitle("Final period grade")
+
+grid.arrange(c8,c9,c10,ncol=3)
+```
+
+
+#PREDICTION 
+
+```{r}
+plot(x=student$G3, y=student$G1, main="G3 ~ G1")
+```
+
+```{r}
+par(mfrow=c(1, 2))
+boxplot(student$G3, main="G3")  # box plot for 'G3'
+boxplot(student$G1, main="G1")  # box plot for 'G1'
+```
+
+```{r}
+library(e1071)
+
+par(mfrow=c(1, 2))  # divide graph area in 2 columns
+plot(density(student$G3), main="Density Plot: G3", ylab="Frequency")  # density plot for 'G3'
+plot(density(student$G1), main="Density Plot: G1", ylab="Frequency")  # density plot for 'G1'
+```
+
+```{r}
+lm_mod <- lm(G3 ~ G1, data=student)
+print(lm_mod)
+```
+
+```{r}
+# Create Training and Test data -
+set.seed(100)  # setting seed to reproduce results of random sampling
+(trainingRowIndex <- sample(1:nrow(student), 0.8*nrow(student)))  # row indices for training data
+trainingData <- student[trainingRowIndex, ]  # model training data
+testData  <- student[-trainingRowIndex, ]   # test data
+```
+
+```{r}
+dim(trainingData)
+```
+
+```{r}
+dim(testData)
+```
+
+```{r}
+# Build the model on training data -
+lmMod <- lm(G3 ~ G1, data=trainingData)  # build the model
+summary(lmMod)
+```
+
+```{r}
+(Pred <- predict(lmMod, testData))  # predict G3
+```
+
+```{r}
+actuals_preds <- data.frame(cbind(actuals=testData$G3, predicteds=Pred))
+head(actuals_preds)
+```
+
+```{r}
+(min_max_accuracy <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max)))  
+# min_max accuracy
+(mape <- mean(abs((actuals_preds$predicteds - actuals_preds$actuals))/actuals_preds$actuals))  
+#mean absolute percentage deviation
+```
+
